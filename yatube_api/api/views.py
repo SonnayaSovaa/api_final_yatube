@@ -1,13 +1,16 @@
-from rest_framework import viewsets
 from rest_framework.decorators import api_view
-from posts.models import Comment, Group, Post
+from posts.models import *
 from .serializers import *
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
-from rest_framework import status
-from rest_framework import permissions
+from rest_framework import filters, permissions, status, viewsets
 from rest_framework.pagination import LimitOffsetPagination
-from rest_framework import filters
+from djoser.views import UserViewSet
+
+
+class CustomUserViewSet(UserViewSet):
+    queryset = User.objects.all()
+    serializer_class = CustomUserSerializer
 
 
 class FollowViewSet(viewsets.ModelViewSet):
@@ -67,11 +70,15 @@ class PostViewSet(viewsets.ModelViewSet):
 class GroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
+    permission_classes = (permissions.AllowAny,)
 
     def create(self, request):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def update(self, serializer):
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    
+    def partial_update(self, request, pk=None):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def destroy(self, instance):

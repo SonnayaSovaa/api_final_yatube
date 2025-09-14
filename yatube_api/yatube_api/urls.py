@@ -4,13 +4,12 @@ from django.views.generic import TemplateView
 
 urlpatterns = [
     path(r'admin/', admin.site.urls),
-    path(r'api/', include('api.urls')),
+    path(r'api/v1/', include('api.urls')),
     path(
         r'redoc/',
         TemplateView.as_view(template_name='redoc.html'),
         name='redoc'
     ),
-    path(r'auth/', include('djoser.urls')),
-    path(r'auth/', include('djoser.urls.jwt')),
+
 ]
 

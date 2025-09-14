@@ -1,8 +1,19 @@
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
+from posts.models import *
+from djoser.serializers import UserSerializer
 
 
-from posts.models import Comment, Follow, Group, Post
+class CustomUserSerializer(UserSerializer):
+    class Meta:
+        model = User
+        fields = ('email', 'id', 'username', 'first_name', 'last_name') 
+
+
+class GroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        fields = '__all__'
+        model = Group
 
 
 class PostSerializer(serializers.ModelSerializer):
@@ -32,12 +43,6 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('post', 'author')
         model = Comment
-
-
-class GroupSerializer(serializers.ModelSerializer):
-    class Meta:
-        fields = ('id', 'title', 'slug', 'description')
-        model = Group
 
 
 class FollowSerializer(serializers.ModelSerializer):

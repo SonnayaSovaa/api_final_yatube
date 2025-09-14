@@ -13,12 +13,13 @@ router.register(r'follow', FollowViewSet, basename='following')
 
 
 urlpatterns = [
-    path(r'v1/api-token-auth/', views.obtain_auth_token),
-    path(r'v1/posts/<int:post_id>/comments/', post_comments_view),
+    path(r'', include('djoser.urls.jwt')),
+    path(r'jwt/', include('djoser.urls')),
+    path(r'posts/<int:post_id>/comments/', post_comments_view),
     path(
-        r'v1/posts/<int:post_id>/comments/<int:comment_id>/',
+        r'posts/<int:post_id>/comments/<int:comment_id>/',
         single_comment_view
     ),
-    path(r'v1/', include(router.urls)),
+    path(r'', include(router.urls)),
 
 ]
