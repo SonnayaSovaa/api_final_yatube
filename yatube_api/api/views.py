@@ -24,11 +24,30 @@ class FollowViewSet(viewsets.ModelViewSet):
     serializer_class = FollowSerializer
     permission_classes = (permissions.IsAuthenticated,)
     filter_backends = (filters.SearchFilter,)
-    search_fields = ('user',)
+    search_fields = ('^user__username',)
+
+    def get(self, request):
+        follows = Follow.objects.filter(user=request.user)
+        serializer = self.get_serializer(follows, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def create(self, request):
         serializer = self.get_serializer(data=request.data)
-        if serializer.following != request.user.username:
+
+        if serializer.is_valid():
+            following = serializer.validated_data['following']
+
+            if request.user == following:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+
+            existing_follow = Follow.objects.filter(
+                user=request.user,
+                following=following
+            ).first()
+            if existing_follow:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+
+            serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -37,6 +56,7 @@ class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     pagination_class = LimitOffsetPagination
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
     def create(self, request):
         serializer = self.get_serializer(data=request.data)

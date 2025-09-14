@@ -1,6 +1,8 @@
-from rest_framework import serializers
+from rest_framework import serializers, status
 from posts.models import Comment, Follow, Group, Post, User
 from djoser.serializers import UserSerializer
+from rest_framework.response import Response
+from posts.models import Follow
 
 
 class CustomUserSerializer(UserSerializer):
@@ -17,7 +19,7 @@ class GroupSerializer(serializers.ModelSerializer):
 
 class PostSerializer(serializers.ModelSerializer):
     group = serializers.SlugRelatedField(
-        slug_field='slug', queryset=Group.objects.all(),
+        slug_field='id', queryset=Group.objects.all(),
         required=False
     )
     author = serializers.SlugRelatedField(
@@ -45,9 +47,14 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class FollowSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(read_only=True)
+    user = serializers.SlugRelatedField(
+        queryset=User.objects.all(),
+        required=False,
+        slug_field='username'
+    )
     following = serializers.SlugRelatedField(
-        read_only=True, slug_field='username'
+        queryset=User.objects.all(),
+        slug_field='username',
     )
 
     class Meta:
