@@ -5,12 +5,17 @@ from .serializers import *
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework import status
-# from rest_framework import authentication, permissions
+from rest_framework import permissions
+from rest_framework.pagination import LimitOffsetPagination
+from rest_framework import filters
 
 
 class FollowViewSet(viewsets.ModelViewSet):
     queryset = Follow.objects.all()
     serializer_class = FollowSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('user',) 
 
     def create(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -22,6 +27,7 @@ class FollowViewSet(viewsets.ModelViewSet):
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
+    pagination_class = LimitOffsetPagination
 
     def create(self, request):
         serializer = self.get_serializer(data=request.data)
