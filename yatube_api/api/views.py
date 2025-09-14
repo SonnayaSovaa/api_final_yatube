@@ -1,6 +1,12 @@
 from rest_framework.decorators import api_view
-from posts.models import *
-from .serializers import *
+from posts.models import Comment, Follow, Group, Post, User
+from .serializers import (
+    CommentSerializer,
+    FollowSerializer,
+    GroupSerializer,
+    PostSerializer,
+    CustomUserSerializer
+)
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework import filters, permissions, status, viewsets
@@ -18,7 +24,7 @@ class FollowViewSet(viewsets.ModelViewSet):
     serializer_class = FollowSerializer
     permission_classes = (permissions.IsAuthenticated,)
     filter_backends = (filters.SearchFilter,)
-    search_fields = ('user',) 
+    search_fields = ('user',)
 
     def create(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -77,7 +83,7 @@ class GroupViewSet(viewsets.ModelViewSet):
 
     def update(self, serializer):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-    
+
     def partial_update(self, request, pk=None):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 

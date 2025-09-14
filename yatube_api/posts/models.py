@@ -40,6 +40,6 @@ class Follow(models.Model):
         User, on_delete=models.CASCADE, related_name='user')
     following = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='follow')
-    
+
     def __str__(self):
         return self.user
