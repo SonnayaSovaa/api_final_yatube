@@ -1,7 +1,6 @@
 from rest_framework import serializers, status
 from posts.models import Comment, Follow, Group, Post, User
 from djoser.serializers import UserSerializer
-from rest_framework.response import Response
 from posts.models import Follow
 
 
@@ -58,5 +57,5 @@ class FollowSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        fields = '__all__'
+        fields = ('user', 'following')
         model = Follow

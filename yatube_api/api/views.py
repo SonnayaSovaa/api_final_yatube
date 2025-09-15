@@ -23,13 +23,16 @@ class FollowViewSet(viewsets.ModelViewSet):
     queryset = Follow.objects.all()
     serializer_class = FollowSerializer
     permission_classes = (permissions.IsAuthenticated,)
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('^user__username',)
+    filter_backends = (filters.SearchFilter, )
+    search_fields = ('=following__username', )
 
-    def get(self, request):
-        follows = Follow.objects.filter(user=request.user)
+    def list(self, request):
+        follows = self.queryset.filter(user=request.user)
+        follows = self.filter_queryset(follows)
         serializer = self.get_serializer(follows, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+        
+
 
     def create(self, request):
         serializer = self.get_serializer(data=request.data)
