@@ -32,7 +32,6 @@ class FollowViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(follows, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-
     def create(self, request):
         serializer = self.get_serializer(data=request.data)
 
