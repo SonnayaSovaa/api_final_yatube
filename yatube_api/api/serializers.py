@@ -1,4 +1,4 @@
-from rest_framework import serializers, status
+from rest_framework import serializers
 from posts.models import Comment, Follow, Group, Post, User
 from djoser.serializers import UserSerializer
 from posts.models import Follow
