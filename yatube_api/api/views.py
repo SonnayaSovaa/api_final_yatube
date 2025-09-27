@@ -31,31 +31,11 @@ class FollowViewSet(viewsets.ModelViewSet):
     filter_backends = (filters.SearchFilter, )
     search_fields = ('=following__username', )
 
-    def list(self, request):
-        follows = self.queryset.filter(user=request.user)
-        follows = self.filter_queryset(follows)
-        serializer = self.get_serializer(follows, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def create(self, request):
-        serializer = self.get_serializer(data=request.data)
-
-        if serializer.is_valid():
-            following = serializer.validated_data['following']
-
-            if request.user == following:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
-
-            existing_follow = Follow.objects.filter(
-                user=request.user,
-                following=following
-            ).first()
-            if existing_follow:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
-
-            serializer.save(user=request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def get_queryset(self):
+        queryset = Follow.objects.all()
+        request_user = self.request.user
+        queryset = queryset.filter(user=request_user)
+        return queryset 
 
 
 class PostViewSet(viewsets.ModelViewSet):

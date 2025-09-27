@@ -2,6 +2,7 @@ from rest_framework import serializers
 from posts.models import Comment, Follow, Group, Post, User
 from djoser.serializers import UserSerializer
 from posts.models import Follow
+from rest_framework.validators import UniqueTogetherValidator
 
 
 class CustomUserSerializer(UserSerializer):
@@ -56,6 +57,17 @@ class FollowSerializer(serializers.ModelSerializer):
         slug_field='username',
     )
 
+    def validate_following(self, value):
+        if value == self.initial_data.get('user'):
+            raise serializers.ValidationError("Нельзя подписаться на себя")
+        return value
+
     class Meta:
         fields = ('user', 'following')
         model = Follow
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Follow.objects.all(),
+                fields=['user', 'following']
+            )
+        ]
