@@ -19,6 +19,11 @@ class CustomUserViewSet(UserViewSet):
     serializer_class = CustomUserSerializer
 
 
+class CommentsViewSet(viewsets.ModelViewSet):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+
+
 class FollowViewSet(viewsets.ModelViewSet):
     queryset = Follow.objects.all()
     serializer_class = FollowSerializer
@@ -58,6 +63,8 @@ class PostViewSet(viewsets.ModelViewSet):
     serializer_class = PostSerializer
     pagination_class = LimitOffsetPagination
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+    filter_backends = (filters.OrderingFilter,)
+    ordering_fields = ('text', 'author') 
 
     def create(self, request):
         serializer = self.get_serializer(data=request.data)
