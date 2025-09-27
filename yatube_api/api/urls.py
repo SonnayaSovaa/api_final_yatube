@@ -12,7 +12,11 @@ router = SimpleRouter()
 router.register(r'posts', PostViewSet, basename='posts')
 router.register(r'groups', GroupViewSet, basename='groups')
 router.register(r'follow', FollowViewSet, basename='following')
-router.register(r'comments/', CommentsViewSet, basename='comments')
+router.register(
+    r'^/posts/\d+/comments/?(\/\d+)?$',
+    CommentsViewSet,
+    basename='comments'
+)
 
 
 
