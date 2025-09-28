@@ -13,7 +13,7 @@ router.register(r'posts', PostViewSet, basename='posts')
 router.register(r'groups', GroupViewSet, basename='groups')
 router.register(r'follow', FollowViewSet, basename='following')
 router.register(
-    r'^/posts/\d+/comments/?(\/\d+)?$',
+    r'posts/(?P<post_id>\d+)/comments',
     CommentsViewSet,
     basename='comments'
 )
@@ -21,7 +21,7 @@ router.register(
 
 
 urlpatterns = [
-    path(r'auth/', include('djoser.urls.jwt')),
+    path(r'', include('djoser.urls.jwt')),
     path(r'', include(router.urls)),
 
 ]
