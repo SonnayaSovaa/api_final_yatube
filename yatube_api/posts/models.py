@@ -38,6 +38,9 @@ class Comment(models.Model):
     created = models.DateTimeField(
         'Дата добавления', auto_now_add=True, db_index=True)
 
+    def __str__(self):
+        return self.text
+
 
 class Follow(models.Model):
     user = models.ForeignKey(
@@ -46,7 +49,11 @@ class Follow(models.Model):
         User, on_delete=models.CASCADE, related_name='follow')
 
     def __str__(self):
-        return self.user
+        return self.user.username
     
     class Meta:
-        unique_together = (('user', 'following'),)
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'following'],
+                name='unique_follow')
+        ]
