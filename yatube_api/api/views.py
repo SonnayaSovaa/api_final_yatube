@@ -1,4 +1,3 @@
-from rest_framework.decorators import api_view
 from posts.models import Comment, Follow, Group, Post, User
 from .serializers import (
     CommentSerializer,
@@ -7,11 +6,11 @@ from .serializers import (
     PostSerializer,
     CustomUserSerializer
 )
-from django.shortcuts import get_object_or_404
-from rest_framework.response import Response
-from rest_framework import filters, permissions, status, viewsets
+from rest_framework import filters, permissions, viewsets
 from rest_framework.pagination import LimitOffsetPagination
 from djoser.views import UserViewSet
+from .permissions import AuthorOrReadOnly
+from django.shortcuts import get_object_or_404
 
 
 class CustomUserViewSet(UserViewSet):
@@ -19,134 +18,58 @@ class CustomUserViewSet(UserViewSet):
     serializer_class = CustomUserSerializer
 
 
-class FollowViewSet(viewsets.ModelViewSet):
+class CommentsViewSet(viewsets.ModelViewSet):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = (
+        permissions.IsAuthenticatedOrReadOnly,
+        AuthorOrReadOnly
+    )
+
+    def get_queryset(self):
+        post_id = self.kwargs.get('post_id')
+        return Comment.objects.filter(post_id=post_id)
+
+    def perform_create(self, serializer):
+        post_id = self.kwargs.get('post_id')
+        postt = get_object_or_404(Post, id=post_id)
+        serializer.save(author=self.request.user, post=postt)
+
+
+class GetPostMixin:
+    def get_queryset(self):
+        follows = self.queryset.filter(user=self.request.user)
+        follows = self.filter_queryset(follows)
+        return follows
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class FollowViewSet(GetPostMixin, viewsets.ModelViewSet):
     queryset = Follow.objects.all()
     serializer_class = FollowSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, )
     filter_backends = (filters.SearchFilter, )
     search_fields = ('=following__username', )
-
-    def list(self, request):
-        follows = self.queryset.filter(user=request.user)
-        follows = self.filter_queryset(follows)
-        serializer = self.get_serializer(follows, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def create(self, request):
-        serializer = self.get_serializer(data=request.data)
-
-        if serializer.is_valid():
-            following = serializer.validated_data['following']
-
-            if request.user == following:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
-
-            existing_follow = Follow.objects.filter(
-                user=request.user,
-                following=following
-            ).first()
-            if existing_follow:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
-
-            serializer.save(user=request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     pagination_class = LimitOffsetPagination
-    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+    permission_classes = (
+        permissions.IsAuthenticatedOrReadOnly,
+        AuthorOrReadOnly
+        )
+    filter_backends = (filters.OrderingFilter,)
+    ordering_fields = ('text', 'author') 
 
-    def create(self, request):
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(author=request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def update(self, request, pk=None):
-        post = self.get_object()
-        serializer = self.get_serializer(post, data=request.data, partial=True)
-        if request.user != serializer.instance.author:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def partial_update(self, request, pk=None):
-        post = self.get_object()
-        serializer = self.get_serializer(post, data=request.data, partial=True)
-        if request.user != serializer.instance.author:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def destroy(self, request, pk=None):
-        post = get_object_or_404(Post, pk=pk)
-        if request.user != post.author:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-        post.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
 
 
-class GroupViewSet(viewsets.ModelViewSet):
+class GroupViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
     permission_classes = (permissions.AllowAny,)
-
-    def create(self, request):
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-    def update(self, serializer):
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-    def partial_update(self, request, pk=None):
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-    def destroy(self, instance):
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-
-@api_view(['GET', 'POST'])
-def post_comments_view(request, post_id):
-    post = get_object_or_404(Post.objects, id=post_id)
-    if request.method == 'POST':
-        serializer = CommentSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(author=request.user, post=post)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    comments = Comment.objects.filter(post=post)
-    serializer = CommentSerializer(comments, many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-@api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
-def single_comment_view(request, post_id, comment_id):
-    post = get_object_or_404(Post.objects, id=post_id)
-    comment = get_object_or_404(Comment.objects, post=post, id=comment_id)
-    if request.method == 'GET':
-        serializer = CommentSerializer(comment)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    if request.user != comment.author:
-        return Response(status=status.HTTP_403_FORBIDDEN)
-
-    if request.method == 'DELETE':
-        comment.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-    elif request.method == 'PUT' or request.method == 'PATCH':
-        serializer = CommentSerializer(
-            comment, data=request.data, partial=True
-        )
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

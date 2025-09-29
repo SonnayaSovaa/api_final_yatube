@@ -2,6 +2,7 @@ from rest_framework import serializers
 from posts.models import Comment, Follow, Group, Post, User
 from djoser.serializers import UserSerializer
 from posts.models import Follow
+from rest_framework.validators import UniqueTogetherValidator
 
 
 class CustomUserSerializer(UserSerializer):
@@ -36,7 +37,7 @@ class PostSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     post = serializers.PrimaryKeyRelatedField(read_only=True)
     author = serializers.SlugRelatedField(
-        read_only=True, slug_field='username'
+        read_only=True, slug_field='username',  required=False
     )
 
     class Meta:
@@ -48,14 +49,34 @@ class CommentSerializer(serializers.ModelSerializer):
 class FollowSerializer(serializers.ModelSerializer):
     user = serializers.SlugRelatedField(
         queryset=User.objects.all(),
-        required=False,
-        slug_field='username'
+
+        slug_field='username',  required=False
     )
     following = serializers.SlugRelatedField(
         queryset=User.objects.all(),
         slug_field='username',
     )
 
+    def validate_following(self, value):
+        if value == self.context['request'].user:
+            raise serializers.ValidationError("Нельзя подписаться на себя")
+        return value
+
+    def validate(self, attrs):
+        user = self.context['request'].user
+        following = attrs['following']
+
+        try:
+            Follow.objects.get(user=user, following=following)
+            raise serializers.ValidationError(
+                "Пользователь уже подписан на указанного автора."
+            )
+        except Follow.DoesNotExist:
+            pass
+
+        return attrs
+
     class Meta:
         fields = ('user', 'following')
         model = Follow
+        read_only_fields = ('user', )
